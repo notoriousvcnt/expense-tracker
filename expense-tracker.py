@@ -47,19 +47,11 @@ from pathlib import Path
 # 6  | 2024-08-06 | Dinner      | $12
 
 # json db
-expenses = [{"expense": {"id":1,"date":"05-21-2026","description":"comida","amount":1500}},
-            {"expense": {"id":2,"date":"05-21-2026","description":"comida","amount":1500}},
-            {"expense": {"id":3,"date":"05-21-2026","description":"comida","amount":1500}},]
 
-y = json.dumps(expenses, indent=4)
 
-#print(y)
-
-database_filename = "expense_db.json"
-current_dir = Path.cwd()
-db_path = Path(current_dir) / database_filename
 
 def create_db(db_path):
+    """Create JSON Database, only if not exists."""
     if db_path.exists():
         #print("File exists.")
         pass
@@ -68,25 +60,29 @@ def create_db(db_path):
         with open(db_path, 'a'):
             print(f"json db created succesfully")
 
-create_db(db_path)
 
 def save_db(db_path, expenses_list):
+    """Save list of dictionaries to JSON file."""
     with open(db_path, 'w') as db_file:
         json.dump(expenses_list,db_file, indent=2)
         #print("saved data to json file.")
 
 def open_db(db_path):
+    """Open JSON File and returns its data."""
     with open(db_path, 'r') as db_file:
         expenses_list = json.load(db_file)
     return expenses_list
 
 def assert_expense_data_types(id, date, description, amount):
+    """Assert data types for expense entry."""
     assert(type(id) == int)
     assert(type(date) == str)
     assert(type(description) == str)
     assert(type(amount) == int)
            
 def check_repeated_expense_id(expenses_list, new_id):
+    """Check if expense ID is repeated in the expenses_list. 
+        Returns True if repeated. Returns False if not repeated."""
     is_repeated = False
     for expense in expenses_list:
         current_id = expense["expense"]["id"]
@@ -96,9 +92,11 @@ def check_repeated_expense_id(expenses_list, new_id):
     return is_repeated
 
 def get_last_expense_id(expenses_list):
+    """Get the ID of the last expense entry in Expenses List."""
     return expenses_list[-1]["expense"]["id"]
 
 def add_expense_to_db_auto_id(db_path, date, description, amount):
+    """Add Expense entry to JSON database, without needing to specify ID."""
     expenses_list = open_db(db_path)
     id = get_last_expense_id(expenses_list) + 1
     assert_expense_data_types(id, date, description, amount)
@@ -115,6 +113,7 @@ def add_expense_to_db_auto_id(db_path, date, description, amount):
         print("cannot add expense because id is repeated.")
 
 def add_expense_to_db(db_path, id, date, description, amount):
+    """Add Expense entry to JSON database. Needs to specify ID."""
     assert_expense_data_types(id, date, description, amount)
     expense = {"expense": {"id":id,
                            "date":date,
@@ -131,6 +130,12 @@ def add_expense_to_db(db_path, id, date, description, amount):
         print("cannot add expense because id is repeated.")
 
 
-add_expense_to_db(db_path, 10, "05-21-2026","comida", 4500)
-add_expense_to_db_auto_id(db_path,"05-21-2026","comida", 4500 )
+if __name__ == "__main__":
+
+    database_filename = "expense_db.json"
+    current_dir = Path.cwd()
+    db_path = Path(current_dir) / database_filename
+    create_db(db_path)
+    add_expense_to_db(db_path, 10, "05-21-2026","comida", 4500)
+    add_expense_to_db_auto_id(db_path,"05-21-2026","comida", 4500)
 
