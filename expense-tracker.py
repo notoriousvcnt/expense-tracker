@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import datetime as dt
 import logging
+import argparse
 
 # entry structure:
 #   id, date, description, amount
@@ -34,9 +35,9 @@ import logging
 # step 3: implement delete expense ✅
 # step 4: implement summary
 #   step 4.1: all expenses ✅
-#   step 4.2: all month expenses
-#   step 4.3: format value to CLP format
-# step 5: implement list expenses
+#   step 4.2: all month expenses ✅
+#   step 4.3: format value to CLP format ✅
+# step 5: implement list expenses ✅
 # step 6: implement CLI
 # step 7: implement list format
 
@@ -121,12 +122,12 @@ def add_expense_to_db(db_path, id, date, description, amount):
     else:
         logging.debug("[FUNCTION] (add_expense_to_db) cannot add expense because id is repeated.")
 
-def add_expense_to_db_auto(db_path, description, amount):
+def add_expense_to_db_auto(db_path, description, amount,date=dt.datetime.now()):
     """Add Expense entry to JSON database, without needing to specify ID nor date."""
     expenses_list = open_db(db_path)
     id = get_last_expense_id(expenses_list) + 1
     logging.debug(f"[FUNCTION] (add_expense_to_db_auto) new expense ID: {id}.")
-    date = dt.datetime.now()
+    #date = dt.datetime.now()
     add_expense_to_db(db_path, id, date, description, amount)
   
 def delete_expense(db_path, id):
@@ -154,13 +155,56 @@ def summary_expenses(db_path):
         summary += currentAmount
     return summary
 
+def summary_expenses_monthly(db_path, year,month):
+    expenses_list = open_db(db_path)
+    summary = 0
+    for expense in expenses_list:
+        expense_date = dt.datetime.strptime(expense["expense"]["date"], "%Y-%m-%d %H:%M:%S")
+        year_month_date = (expense_date.year,expense_date.month)
+
+        if year_month_date == (year, month):
+            currentAmount = expense["expense"]["amount"]
+            summary += currentAmount
+    return summary
+
+def amount_to_clp_str(amount):
+    return f"${amount:,}".replace(",",".") + " CLP"
+
+
+def list_expenses(db_path):
+    expenses_list = open_db(db_path)
+    expenses_list_str = "-----------------------------------------------------------------------------------\nExpenses\n-----------------------------------------------------------------------------------\n"
+    for expense in expenses_list:
+        amount = expense["expense"]["amount"]
+        expense_str = f"ID: {expense["expense"]["id"]:02d} - Date: {expense["expense"]["date"]} - Description: {expense["expense"]["description"]} - Amount: {amount_to_clp_str(amount)}\n"
+        expenses_list_str += expense_str
+    expenses_list_str += "-----------------------------------------------------------------------------------\n"
+    return expenses_list_str
+
 if __name__ == "__main__":
+    #config basic logger for activate/desactivate print debugging
     logging.basicConfig(level=logging.INFO)
+
+    #define db_name, create if don't exists
     database_filename = "expense_db.json"
     current_dir = Path.cwd()
     db_path = Path(current_dir) / database_filename
     create_db(db_path)
-    add_expense_to_db_auto(db_path, "comida",4512)
+
+    #Trying functions
+    # adding entries
+    #add_expense_to_db_auto(db_path, "comida",4510002,date=dt.datetime(2025,4,30))
+    
+    #deleting expenses
     delete_expense(db_path,3)
+
+    #showing summaries
     summary = summary_expenses(db_path)
-    print(f"Total Expenses: ${summary}")
+    print(f"Total Expenses: {amount_to_clp_str(summary)}.")
+    query_date_expense = (2026,5)
+    monthly_expenses = summary_expenses_monthly(db_path,2026,5)
+    print(f"Total expenses for {query_date_expense[0]}-{query_date_expense[1]:02d}: {amount_to_clp_str(monthly_expenses)}.")
+
+    #listing all expenses
+    expenses_str_list = list_expenses(db_path)
+    print(expenses_str_list)
