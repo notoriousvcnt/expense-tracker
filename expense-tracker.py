@@ -197,13 +197,12 @@ if __name__ == "__main__":
     database_filename = "expense_db.json"
     db_path = init_db(database_filename)
 
-    parser = cli.init_cli()
-    cli_args_dict = cli.parse_args_to_dict(parser)
-    logging.info(cli_args_dict)
+    args = cli.init_cli()
+    logging.info(args)
     
-    if cli_args_dict["action"] == "add":
-        description = cli_args_dict["description"]
-        amount = cli_args_dict["amount"]
+    if args.command == "add":
+        description = args.description
+        amount = args.amount
         add_expense_to_db_auto(db_path,description, amount)
     
     
