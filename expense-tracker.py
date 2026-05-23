@@ -5,6 +5,7 @@ from pathlib import Path
 import datetime as dt
 import logging
 import argparse
+import cli
 
 # entry structure:
 #   id, date, description, amount
@@ -181,30 +182,45 @@ def list_expenses(db_path):
     expenses_list_str += "-----------------------------------------------------------------------------------\n"
     return expenses_list_str
 
+def init_db(database_filename):
+    #define db_name, create if don't exists
+    
+    current_dir = Path.cwd()
+    db_path = Path(current_dir) / database_filename
+    create_db(db_path)
+    return db_path
+
 if __name__ == "__main__":
     #config basic logger for activate/desactivate print debugging
     logging.basicConfig(level=logging.INFO)
 
-    #define db_name, create if don't exists
     database_filename = "expense_db.json"
-    current_dir = Path.cwd()
-    db_path = Path(current_dir) / database_filename
-    create_db(db_path)
+    db_path = init_db(database_filename)
 
-    #Trying functions
-    # adding entries
-    #add_expense_to_db_auto(db_path, "comida",4510002,date=dt.datetime(2025,4,30))
+    parser = cli.init_cli()
+    cli_args_dict = cli.parse_args_to_dict(parser)
+    logging.info(cli_args_dict)
     
-    #deleting expenses
-    delete_expense(db_path,3)
+    if cli_args_dict["action"] == "add":
+        description = cli_args_dict["description"]
+        amount = cli_args_dict["amount"]
+        add_expense_to_db_auto(db_path,description, amount)
+    
+    
+    # #Trying functions
+    # # adding entries
+    # #add_expense_to_db_auto(db_path, "comida",4510002,date=dt.datetime(2025,4,30))
+    
+    # #deleting expenses
+    # delete_expense(db_path,3)
 
-    #showing summaries
-    summary = summary_expenses(db_path)
-    print(f"Total Expenses: {amount_to_clp_str(summary)}.")
-    query_date_expense = (2026,5)
-    monthly_expenses = summary_expenses_monthly(db_path,2026,5)
-    print(f"Total expenses for {query_date_expense[0]}-{query_date_expense[1]:02d}: {amount_to_clp_str(monthly_expenses)}.")
+    # #showing summaries
+    # summary = summary_expenses(db_path)
+    # print(f"Total Expenses: {amount_to_clp_str(summary)}.")
+    # query_date_expense = (2026,5)
+    # monthly_expenses = summary_expenses_monthly(db_path,2026,5)
+    # print(f"Total expenses for {query_date_expense[0]}-{query_date_expense[1]:02d}: {amount_to_clp_str(monthly_expenses)}.")
 
-    #listing all expenses
-    expenses_str_list = list_expenses(db_path)
-    print(expenses_str_list)
+    # #listing all expenses
+    # expenses_str_list = list_expenses(db_path)
+    # print(expenses_str_list)
