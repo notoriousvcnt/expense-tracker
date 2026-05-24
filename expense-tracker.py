@@ -5,6 +5,7 @@ from pathlib import Path
 import datetime as dt
 import logging
 import cli
+import sys
 
 # entry structure:
 #   id, date, description, amount
@@ -61,7 +62,8 @@ def create_db(db_path):
         logging.debug("[FUNCTION] (create_db) File exists.")
     else:
         logging.debug("[FUNCTION] (create_db) File does not exists.")
-        with open(db_path, 'a'):
+        with open(db_path, 'a') as db_file:
+            json.dump([],db_file, indent=2)
             logging.debug(f"[FUNCTION] (create_db) json db created succesfully")
 
 
@@ -73,12 +75,16 @@ def save_db(db_path, expenses_list):
 
 def open_db(db_path):
     """Open JSON File and returns its data."""
-    with open(db_path, 'r') as db_file:
-        expenses_list = json.load(db_file)
-    
-    logging.debug(f"[FUNCTION] (open_db) expenses_list content:")
-    logging.debug(expenses_list)
-    return expenses_list
+    try:
+        with open(db_path, 'r') as db_file:
+            expenses_list = json.load(db_file)
+        
+        logging.debug(f"[FUNCTION] (open_db) expenses_list content:")
+        logging.debug(expenses_list)
+        return expenses_list
+    except json.decoder.JSONDecodeError:
+        print("Error reading JSON File. Maybe it's corrupted",file=sys.stderr)
+        sys.exit(1)
 
 def assert_expense_data_types(id, date, description, amount):
     """Assert data types for expense entry."""
@@ -86,7 +92,13 @@ def assert_expense_data_types(id, date, description, amount):
     assert(type(date) == dt.datetime)
     assert(type(description) == str)
     assert(type(amount) == int and amount >= 0)
-           
+
+def check_if_db_is_empty(db_path):
+    expenses_list = open_db(db_path)
+    if len(expenses_list) == 0:
+        print("Expense database is empty. Cannot make this operation",file=sys.stderr)
+        sys.exit(0) 
+
 def check_repeated_expense_id(expenses_list, new_id):
     """Check if expense ID is repeated in the expenses_list. 
         Returns True if repeated. Returns False if not repeated."""
@@ -178,21 +190,23 @@ def amount_to_clp_str(amount):
 def summary_expenses(db_path):
     expenses_list = open_db(db_path)
     summary = 0
-    for expense in expenses_list:
-        currentAmount = expense["expense"]["amount"]
-        summary += currentAmount
+    if len(expenses_list) > 0:
+        for expense in expenses_list:
+            currentAmount = expense["expense"]["amount"]
+            summary += currentAmount
     print("Total expenses: "+ f"{amount_to_clp_str(summary)}")
 
 def summary_expenses_monthly(db_path, year,month):
     expenses_list = open_db(db_path)
     summary = 0
-    for expense in expenses_list:
-        expense_date = dt.datetime.strptime(expense["expense"]["date"], "%Y-%m-%d %H:%M:%S")
-        year_month_date = (expense_date.year,expense_date.month)
+    if len(expenses_list) > 0:
+        for expense in expenses_list:
+            expense_date = dt.datetime.strptime(expense["expense"]["date"], "%Y-%m-%d %H:%M:%S")
+            year_month_date = (expense_date.year,expense_date.month)
 
-        if year_month_date == (year, month):
-            currentAmount = expense["expense"]["amount"]
-            summary += currentAmount
+            if year_month_date == (year, month):
+                currentAmount = expense["expense"]["amount"]
+                summary += currentAmount
     print(f"Total expenses for {year}-{month:02d}: "+ f"{amount_to_clp_str(summary)}")
 
 def find_largest_field(expenses_list):
@@ -215,22 +229,27 @@ def find_largest_field(expenses_list):
 
 def list_expenses(db_path):
     expenses_list = open_db(db_path)
-    field_largest = find_largest_field(expenses_list)
-    id_pad = field_largest["id"]
-    date_pad = field_largest["date"]
-    description_pad = max(field_largest["description"], len("Description"))
-    amount_pad = field_largest["amount"]
-    title = "Expenses"
-    table_header = "ID".ljust(id_pad) + " | " + "Date".ljust(date_pad) + " | " + "Description".ljust(description_pad) +  " | " + "Amount".ljust(amount_pad) + " |\n"
-    expenses_list_str = "\n"+ title + "\n" + table_header + "-"*len(table_header) + "\n"
-    for expense in expenses_list:
-        amount = expense["expense"]["amount"]
-        id = expense["expense"]["id"]
-        date = expense["expense"]["date"]
-        description = expense["expense"]["description"]
-        #expense_str = f"ID: {id:02d} - Date: {date} - Description: {description} - Amount: {amount_to_clp_str(amount)}\n"
-        expense_str = f"{id:02d}".ljust(id_pad) + ' | ' + date.ljust(date_pad) + ' | ' + description.ljust(description_pad) + ' | ' + amount_to_clp_str(amount).ljust(amount_pad) + " |\n"
-        expenses_list_str += expense_str
+    if len(expenses_list) > 0:
+        field_largest = find_largest_field(expenses_list)
+        id_pad = field_largest["id"]
+        date_pad = field_largest["date"]
+        description_pad = max(field_largest["description"], len("Description"))
+        amount_pad = field_largest["amount"]
+        title = "Expenses"
+        table_header = "ID".ljust(id_pad) + " | " + "Date".ljust(date_pad) + " | " + "Description".ljust(description_pad) +  " | " + "Amount".ljust(amount_pad) + " |\n"
+        expenses_list_str = "\n"+ title + "\n" + table_header + "-"*len(table_header) + "\n"
+        for expense in expenses_list:
+            amount = expense["expense"]["amount"]
+            id = expense["expense"]["id"]
+            date = expense["expense"]["date"]
+            description = expense["expense"]["description"]
+            #expense_str = f"ID: {id:02d} - Date: {date} - Description: {description} - Amount: {amount_to_clp_str(amount)}\n"
+            expense_str = f"{id:02d}".ljust(id_pad) + ' | ' + date.ljust(date_pad) + ' | ' + description.ljust(description_pad) + ' | ' + amount_to_clp_str(amount).ljust(amount_pad) + " |\n"
+            expenses_list_str += expense_str
+    else:
+        title = "Expenses"
+        table_header = "ID" + " | " + "Date" + " | " + "Description" +  " | " + "Amount" + " |\n"
+        expenses_list_str = "\n"+ title + "\n" + table_header + "-"*len(table_header) + "\n"
     return expenses_list_str
 
 def init_db(database_filename):
@@ -250,6 +269,8 @@ if __name__ == "__main__":
     args = cli.init_cli()
     logging.debug(args)
 
+    if args.command == "update" or args.command == "delete":
+        check_if_db_is_empty(db_path)
     
     if args.command == "add":
         description = args.description
@@ -266,7 +287,6 @@ if __name__ == "__main__":
             summary_expenses_monthly(db_path, year, month)
         else:
             summary_expenses(db_path)
-
     elif args.command == "update":
         id = args.id
         new_date = None
