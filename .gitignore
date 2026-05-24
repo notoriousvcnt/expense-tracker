@@ -1,3 +1,4 @@
 .env
 __pycache__
 expense_db.json
+CLAUDE.md

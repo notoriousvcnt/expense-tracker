@@ -22,7 +22,11 @@ def init_cli():
     summary_cmd.add_argument("--month",type=int,help="month to retrieve expenses")
     summary_cmd.add_argument("--year",help="year to retrieve expenses",type=int)
     
-    
+    update_cmd = subparsers.add_parser("update",help="update expense")
+    update_cmd.add_argument("--id",help="expense of id to update",type=int)
+    update_cmd.add_argument("--description",help="updated description of expense")
+    update_cmd.add_argument("--amount",help="updated expense amount",type=int)
+
 
     delete_cmd = subparsers.add_parser("delete",help="delete expense by ID")
     delete_cmd.add_argument("--id",help="expense's ID to delete",type=int,required=True)
