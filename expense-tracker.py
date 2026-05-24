@@ -6,6 +6,8 @@ import datetime as dt
 import logging
 import cli
 import sys
+from prompt_toolkit import print_formatted_text as print
+from prompt_toolkit import HTML
 
 # entry structure:
 #   id, date, description, amount
@@ -260,6 +262,7 @@ def init_db(database_filename):
     return db_path
 
 if __name__ == "__main__":
+    print(HTML('<ansired>This is red</ansired>'))
     #config basic logger for activate/desactivate print debugging
     logging.basicConfig(level=logging.INFO)
 
